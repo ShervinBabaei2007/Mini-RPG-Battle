@@ -25,6 +25,12 @@ class character:
 
     # Character alive
     def is_alive(self):
-        # TODO: Iterate the aliveTime counter when health is > 0
-        # TODO: Reset aliveTime when hp <= 0
         return self.hp > 0
+
+    def Update_is_alive(self, health):
+        if health > 0:
+            self.aliveTime += 1
+            return True
+        else:
+            self.aliveTime = 0
+            return False
