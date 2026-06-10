@@ -42,9 +42,12 @@ class player(character):
     inventory = []  # TODO: store collected items
 
     def level_up(self, xp):
-        # TODO: Define XP progression for 25 levels (linear scaling)
-        # TODO: Use cumulative XP system to determine level (250xp needed for lvl 1, 500xp for lvl 2, etc...)
-        # TODO: Cap at max level (25) and handle extra XP overflow
+        # TODO: Create 25 levels
+        # TODO: Every level requires 250 more total XP than the previous level
+        # TODO: Check player's total XP to determine current level
+        # TODO: Increase level when enough XP is earned
+        # TODO: Stop leveling once level 25 is reached
+        # TODO: Decide what happens to extra XP earned after reaching level 25
         pass
 
     def equip(self, item):
