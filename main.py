@@ -1,3 +1,6 @@
+import random
+
+
 # Character
 class character:
     def __init__(self, name):
@@ -43,9 +46,11 @@ class player(character):
 
     def level_up(self, exp):
         # TODO: Create 25 levels
-        level = 0 # setting base level
-        for cur_level in range(1, 26): # max lvl of 25
-            xp_required = cur_level * 250 # XP required = level × 250 (linear progression, max level 25)
+        level = 0  # setting base level
+        for cur_level in range(1, 26):  # max lvl of 25
+            xp_required = (
+                cur_level * 250
+            )  # XP required = level × 250 (linear progression, max level 25)
 
             if exp >= xp_required:
                 level = cur_level
@@ -68,11 +73,38 @@ class player(character):
 
 class enemy(character):  #
     xp_reward = 0
-    loot_tools = []  # TODO: Define 25-item loot table with rarity distribution
+    loot_table = [
+        ("Shards", 75.0),
+        ("Healing Herb", 60.0),
+        ("Wolf Pelt", 55.0),
+        ("Rusty Dagger", 50.0),
+        ("Iron Sword", 40.0),
+        ("Leather Armor", 35.0),
+        ("Hunter Bow", 30.0),
+        ("Steel Sword", 25.0),
+        ("Fire Crystal", 15.0),
+        ("Ice Crystal", 12.0),
+        ("Thunder Fragment", 10.0),
+        ("Poison Vial", 8.0),
+        ("Knight’s Emblem", 6.0),
+        ("Dark Amulet", 5.0),
+        ("Sunstone", 3.0),
+        ("Dragon Scale", 1.0),
+        ("Mythic Core", 0.75),
+        ("Ancient Relic", 0.3),
+        ("Cursed Ring", 0.2),
+        ("Void Fragment", 0.125),
+        ("Celestial Shard", 0.05),
+        ("Godstone", 0.025),
+        ("Time Crystal", 0.01),
+        ("World Core", 0.005),
+        ("Reality Seed", 0.00133),
+    ]
 
     def drop_loots(self):
-        # TODO: Roll chance (e.g., 30% drop rate)
-        # TODO: If success, pick one random item from loot_tools
-        # TODO: Return item
-        # TODO: If fail, return None
-        pass
+        roll = random.uniform(0, 100)  # 0% to 100%
+
+        for item, chance in self.loot_table: # loops through the item and the chance (%), returns an item
+            if roll <= chance:
+                return item
+        return None
