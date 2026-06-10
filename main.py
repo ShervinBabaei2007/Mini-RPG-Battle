@@ -41,14 +41,17 @@ class player(character):
     gold = 0
     inventory = []  # TODO: store collected items
 
-    def level_up(self, xp):
+    def level_up(self, exp):
         # TODO: Create 25 levels
-        # TODO: Every level requires 250 more total XP than the previous level
-        # TODO: Check player's total XP to determine current level
-        # TODO: Increase level when enough XP is earned
-        # TODO: Stop leveling once level 25 is reached
-        # TODO: Decide what happens to extra XP earned after reaching level 25
-        pass
+        level = 0 # setting base level
+        for cur_level in range(1, 26): # max lvl of 25
+            xp_required = cur_level * 250 # XP required = level × 250 (linear progression, max level 25)
+
+            if exp >= xp_required:
+                level = cur_level
+            else:
+                break
+        return level
 
     def equip(self, item):
         # TODO: Move item from inventory into equipped slot
@@ -63,7 +66,7 @@ class player(character):
         pass
 
 
-class enemy(character):
+class enemy(character):  #
     xp_reward = 0
     loot_tools = []  # TODO: Define 25-item loot table with rarity distribution
 
