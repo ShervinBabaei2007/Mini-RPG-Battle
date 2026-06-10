@@ -34,3 +34,25 @@ class character:
         else:
             self.aliveTime = 0
             return False
+
+
+class player(character):
+    player_xp = 0
+    gold = 0
+
+    def level_up(self, xp):
+        pass
+
+    def equip(self, f):
+        pass
+
+    def use_item(self):
+        pass
+
+
+class enemey(character):
+    xp_reward = 0
+    loot_tools = ["???"]
+
+    def drop_loots(self, loot_tools):
+        pass
