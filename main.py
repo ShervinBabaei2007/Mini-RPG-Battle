@@ -40,12 +40,14 @@ class character:
 
 
 class player(character):
-    player_xp = 0
-    gold = 0
-    inventory = []  # TODO: store collected items
+    def __init__(self, name):
+        super().__init__(name)
+        self.player_xp = 0
+        self.gold = 0
+        self.inventory = []
+        self.equipped = None
 
     def level_up(self, exp):
-        # TODO: Create 25 levels
         level = 0  # setting base level
         for cur_level in range(1, 26):  # max lvl of 25
             xp_required = (
@@ -58,53 +60,90 @@ class player(character):
                 break
         return level
 
+    def inv(self, item):
+        # Adding the item into inv
+        if item is not None:
+            self.inventory.append(item)
+
     def equip(self, item):
-        # TODO: Move item from inventory into equipped slot
-        # TODO: Validate item type before equipping
-        # TODO: Replace currently equipped item if needed
-        pass
+        if item is None:
+            return
+
+        # Item must exist in inv
+        if item["type"] != "weapon":
+            print("Cannot equip this item.")
+            return
+
+        # remove from inv
+        self.inventory.remove(item)
+
+        # replacing current equip item (if any)
+        if self.equipped is not None:
+            self.inventory.append(self.equipped)
+
+        # equiping new item
+        self.equipped = item
 
     def use_item(self, item):
-        # TODO: Determine if item is consumable or equip-based or both...
-        # TODO: Apply item effect (heal, buff, etc.)
-        # TODO: Remove item if consumed
-        pass
+        if item not in self.inventory:
+            return
+
+        # consumable for now
+        if item["type"] == "consumable":
+            # adding minor effect
+            if item["name"] == "Healing Herb":
+                self.heal(25)
+            elif item["name"] == "Posion Vial":
+                self.take_damage(10)
+            # removing effect after usage
+            self.inventory.remove(item)
+        else:
+            print("This item cannot be used at this current time.")
 
 
-class enemy(character):  #
+class enemy(character):
     xp_reward = 0
     loot_table = [
-        ("Shards", 75.0),
-        ("Healing Herb", 60.0),
-        ("Wolf Pelt", 55.0),
-        ("Rusty Dagger", 50.0),
-        ("Iron Sword", 40.0),
-        ("Leather Armor", 35.0),
-        ("Hunter Bow", 30.0),
-        ("Steel Sword", 25.0),
-        ("Fire Crystal", 15.0),
-        ("Ice Crystal", 12.0),
-        ("Thunder Fragment", 10.0),
-        ("Poison Vial", 8.0),
-        ("Knight’s Emblem", 6.0),
-        ("Dark Amulet", 5.0),
-        ("Sunstone", 3.0),
-        ("Dragon Scale", 1.0),
-        ("Mythic Core", 0.75),
-        ("Ancient Relic", 0.3),
-        ("Cursed Ring", 0.2),
-        ("Void Fragment", 0.125),
-        ("Celestial Shard", 0.05),
-        ("Godstone", 0.025),
-        ("Time Crystal", 0.01),
-        ("World Core", 0.005),
-        ("Reality Seed", 0.00133),
+        ("Shards", 75.0, "material"),
+        ("Healing Herb", 60.0, "consumable"),
+        ("Wolf Pelt", 55.0, "material"),
+        ("Rusty Dagger", 50.0, "weapon"),
+        ("Iron Sword", 40.0, "weapon"),
+        ("Leather Armor", 35.0, "armor"),
+        ("Hunter Bow", 30.0, "weapon"),
+        ("Steel Sword", 25.0, "weapon"),
+        ("Fire Crystal", 15.0, "material"),
+        ("Ice Crystal", 12.0, "material"),
+        ("Thunder Fragment", 10.0, "material"),
+        ("Poison Vial", 8.0, "consumable"),
+        ("Knight's Emblem", 6.0, "accessory"),
+        ("Dark Amulet", 5.0, "accessory"),
+        ("Sunstone", 3.0, "material"),
+        ("Dragon Scale", 1.0, "material"),
+        ("Mythic Core", 0.75, "material"),
+        ("Ancient Relic", 0.3, "material"),
+        ("Cursed Ring", 0.2, "accessory"),
+        ("Void Fragment", 0.125, "material"),
+        ("Celestial Shard", 0.05, "material"),
+        ("Godstone", 0.025, "material"),
+        ("Time Crystal", 0.01, "material"),
+        ("World Core", 0.005, "material"),
+        ("Reality Seed", 0.00133, "material"),
     ]
+
+    def __init__(self):  # a constructor that is going to hold this inventory
+        self.inventory = []
 
     def drop_loots(self):
         roll = random.uniform(0, 100)  # 0% to 100%
 
-        for item, chance in self.loot_table: # loops through the item and the chance (%), returns an item
+        for (
+            name,
+            chance,
+            item_type,
+        ) in (
+            self.loot_table
+        ):  # loops through the item and the chance (%), returns an item
             if roll <= chance:
-                return item
+                return {"name": name, "type": item_type}
         return None
