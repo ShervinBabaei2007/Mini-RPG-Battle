@@ -2,7 +2,7 @@ import random
 
 
 # Character
-class character:
+class Character:
     def __init__(self, name):
         self.name = name
         self.hp = 100
@@ -39,49 +39,72 @@ class character:
             return False
 
 
-class player(character):
+class Player(Character):
     def __init__(self, name):
         super().__init__(name)
         self.player_xp = 0
         self.gold = 0
         self.inventory = []
+        self.rare_pity = 0
+        self.boss_pity = 0
         self.equipped = None
 
+    # Dictonary list
+    rare_items = [
+        {"name": "Dragon Scale", "type": "material"},
+        {"name": "Mythic Core", "type": "material"},
+        {"name": "Ancient Relic", "type": "material"},
+        {"name": "Cursed Ring", "type": "accessory"},
+        {"name": "Void Fragment", "type": "material"},
+    ]
+
+    boss_items = [
+        {"name": "Celestial Shard", "type": "material"},
+        {"name": "Godstone", "type": "material"},
+        {"name": "Time Crystal", "type": "material"},
+        {"name": "World Core", "type": "material"},
+        {"name": "Reality Seed", "type": "material"},
+    ]
+
+    def check_rare_pity(self):
+        if self.rare_pity >= 100:  # 100 kills required
+            reward = random.choice(self.rare_items)
+            self.inventory.append(reward)
+            self.rare_pity = 0
+            print(f"Pity reward: {reward}")
+
+    def check_boss_pity(self):
+        if self.boss_pity >= 10:  # 10 boss skills required
+            reward = random.choice(self.boss_items)
+            self.inventory.append(reward)
+            self.boss_pity = 0
+            print(f"Boss pity reward: {reward}")
+
     def level_up(self, exp):
-        level = 0  # setting base level
-        for cur_level in range(1, 26):  # max lvl of 25
-            xp_required = (
-                cur_level * 250
-            )  # XP required = level × 250 (linear progression, max level 25)
-
-            if exp >= xp_required:
-                level = cur_level
-            else:
-                break
-        return level
-
-    def inv(self, item):
-        # Adding the item into inv
-        if item is not None:
-            self.inventory.append(item)
+        self.player_xp += exp  # accumulate xp first
+        for cur_level in range(1, 26):  # max lvl 25
+            if self.player_xp < cur_level * 250:
+                self.level = cur_level - 1
+                return
+        self.level = 25
 
     def equip(self, item):
         if item is None:
             return
 
-        # Item must exist in inv
         if item["type"] != "weapon":
             print("Cannot equip this item.")
             return
 
-        # remove from inv
+        if item not in self.inventory:
+            print("Item not in inventory.")
+            return
+
         self.inventory.remove(item)
 
-        # replacing current equip item (if any)
         if self.equipped is not None:
             self.inventory.append(self.equipped)
 
-        # equiping new item
         self.equipped = item
 
     def use_item(self, item):
@@ -101,7 +124,7 @@ class player(character):
             print("This item cannot be used at this current time.")
 
 
-class enemy(character):
+class Enemy(Character):
     xp_reward = 0
     loot_table = [
         ("Shards", 75.0, "material"),
@@ -124,26 +147,79 @@ class enemy(character):
         ("Ancient Relic", 0.3, "material"),
         ("Cursed Ring", 0.2, "accessory"),
         ("Void Fragment", 0.125, "material"),
-        ("Celestial Shard", 0.05, "material"),
-        ("Godstone", 0.025, "material"),
-        ("Time Crystal", 0.01, "material"),
-        ("World Core", 0.005, "material"),
-        ("Reality Seed", 0.00133, "material"),
     ]
 
-    def __init__(self):  # a constructor that is going to hold this inventory
+    def __init__(
+        self, name="Enemy"
+    ):  # a constructor that is going to hold this inventory
+        super().__init__(name)
         self.inventory = []
 
     def drop_loots(self):
-        roll = random.uniform(0, 100)  # 0% to 100%
+        total = sum(chance for _, chance, _ in self.loot_table)
+        roll = random.uniform(0, total)
+        cumulative = 0
 
-        for (
-            name,
-            chance,
-            item_type,
-        ) in (
-            self.loot_table
-        ):  # loops through the item and the chance (%), returns an item
-            if roll <= chance:
+        for name, chance, item_type in self.loot_table:
+            cumulative += chance
+            if roll <= cumulative:
                 return {"name": name, "type": item_type}
         return None
+
+
+# runs directly as a script
+if __name__ == "__main__":
+    player1 = Player("Hero")
+    enemy1 = Enemy()
+
+    while True:
+        print("\n--- MENU ---")
+        print("1. Fight enemy (drop loot)")
+        print("2. View inventory")
+        print("3. Equip item (by name)")
+        print("4. Use item (by name)")
+        print("5. Exit")
+
+        choice = input("Choose action: ")
+
+        if choice == "1":
+            loot = enemy1.drop_loots()
+            print("Dropped:", loot)
+
+            if loot is not None:
+                player1.inventory.append(loot)
+
+            # pity system hook
+            player1.rare_pity += 1
+            player1.check_rare_pity()
+
+        elif choice == "2":
+            print("Inventory:", player1.inventory)
+
+        elif choice == "3":
+            name = input("Item name to equip: ")
+
+            item = next(
+                (item for item in player1.inventory if item["name"] == name), None
+            )
+
+            if item is None:
+                print("Item not found.")
+            else:
+                player1.equip(item)
+
+        elif choice == "4":
+            name = input("Item name to use: ")
+
+            item = next((i for i in player1.inventory if i["name"] == name), None)
+
+            if item is None:
+                print("Item not found.")
+            else:
+                player1.use_item(item)
+
+        elif choice == "5":
+            break
+
+        else:
+            print("Invalid choice")
