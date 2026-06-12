@@ -7,8 +7,8 @@ class Character:
         self.name = name
         self.hp = 100
         self.max_hp = 200
-        self.attack_power = 1
-        self.defense = 10
+        self.attack_power = 15
+        self.defense = 5
         self.level = 0
         self.aliveTime = 0
 
@@ -70,14 +70,14 @@ class Player(Character):
         if self.rare_pity >= 100:  # 100 kills required
             reward = random.choice(self.rare_items)
             self.inventory.append(reward)
-            self.rare_pity = 0
+            self.rare_pity = 0 # resets pity back to 0
             print(f"Pity reward: {reward}")
 
     def check_boss_pity(self):
         if self.boss_pity >= 10:  # 10 boss skills required
             reward = random.choice(self.boss_items)
             self.inventory.append(reward)
-            self.boss_pity = 0
+            self.boss_pity = 0 # resets pity back to 0
             print(f"Boss pity reward: {reward}")
 
     def level_up(self, exp):
@@ -125,7 +125,7 @@ class Player(Character):
 
 
 class Enemy(Character):
-    xp_reward = 0
+    # All enemy loots and chances
     loot_table = [
         ("Shards", 75.0, "material"),
         ("Healing Herb", 60.0, "consumable"),
@@ -153,6 +153,7 @@ class Enemy(Character):
         self, name="Enemy"
     ):  # a constructor that is going to hold this inventory
         super().__init__(name)
+        self.xp_reward = 50
         self.inventory = []
 
     def drop_loots(self):
@@ -165,6 +166,51 @@ class Enemy(Character):
             if roll <= cumulative:
                 return {"name": name, "type": item_type}
         return None
+
+# Character vs Enemy
+class Battle:
+    def __init__(self, player, enemy):
+        self.player = player
+        self.enemy = enemy
+
+    def player_turn(self):
+        damage = max(0, self.player.attack_power - self.enemy.defense)
+        self.enemy.take_damage(damage)
+        self.player.Update_is_alive(self.player.hp)
+        print(f"You deal {damage} damage. Enemy HP: {self.enemy.hp}\n")
+
+    def enemy_turn(self):
+        damage = max(0, self.enemy.attack_power - self.player.defense)
+        self.player.take_damage(damage)
+        print(f"Enemy deals {damage} damage. Your HP: {self.player.hp}")
+
+    def check_Battle_end(self):
+        if not self.enemy.is_alive():
+            self.player.level_up(self.enemy.xp_reward)
+
+            loot = self.enemy.drop_loots()
+            if loot:
+                self.player.inventory.append(loot)
+                print(f"Dropped: {loot['name']}")
+            print(f"Victory! Survived {self.player.aliveTime} rounds.")
+            return True
+
+        if not self.player.is_alive():
+            print(f"Defeated after {self.player.aliveTime} rounds.")
+            return True
+        return False
+
+    def start(self):
+        self.player.aliveTime = 0
+        self.player.hp = self.player.max_hp
+        print(f"\nBattle start: {self.player.name} vs {self.enemy.name}")
+        while True:
+            self.player_turn()
+            if self.check_Battle_end():
+                break
+            self.enemy_turn()
+            if self.check_Battle_end():
+                break
 
 
 # runs directly as a script
@@ -183,13 +229,11 @@ if __name__ == "__main__":
         choice = input("Choose action: ")
 
         if choice == "1":
-            loot = enemy1.drop_loots()
-            print("Dropped:", loot)
+            enemy1 = Enemy()  # fresh enemy each fight
+            battle = Battle(player1, enemy1)
+            battle.start()
 
-            if loot is not None:
-                player1.inventory.append(loot)
-
-            # pity system hook
+            # pity system
             player1.rare_pity += 1
             player1.check_rare_pity()
 
