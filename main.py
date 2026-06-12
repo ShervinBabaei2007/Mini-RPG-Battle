@@ -177,7 +177,7 @@ class Enemy(Character):
 
 
 class Boss(Enemy):
-    def __init__(self, name="White Tiger"):
+    def __init__(self, name="WhiteTiger"):
         super().__init__(name)
         self.hp = 300
         self.max_hp = 300
@@ -213,6 +213,36 @@ class Boss(Enemy):
             return base_damage * 2
 
         return base_damage
+
+
+class WhiteTiger(Boss):
+    def __init__(self):
+        super().__init__(name="White Tiger")
+        self.hp = 300
+        self.max_hp = 300
+        self.attack_power = 25
+        self.defense = 10
+        self.xp_reward = 200
+
+
+class ShadowDragon(Boss):
+    def __init__(self):
+        super().__init__(name="Shadow Dragon")
+        self.hp = 500
+        self.max_hp = 500
+        self.attack_power = 40
+        self.defense = 20
+        self.xp_reward = 400
+
+
+class AncientGolem(Boss):
+    def __init__(self):
+        super().__init__(name="Ancient Golem")
+        self.hp = 800
+        self.max_hp = 800
+        self.attack_power = 30
+        self.defense = 35
+        self.xp_reward = 600
 
 
 # Character vs Enemy
@@ -283,9 +313,12 @@ if __name__ == "__main__":
             player1.rare_pity += 1
             player1.boss_pity += 1
 
+            boss_roster = [WhiteTiger, ShadowDragon, AncientGolem]
+
             if player1.boss_pity >= 10:
-                enemy1 = Boss()
-                print("A boss appears!")
+                index = min(player1.level // 5, len(boss_roster) - 1) # pick a boss based on level, but never go past the last boss in the list.
+                enemy1 = boss_roster[index]()
+                print(f"A {enemy1.name} appears!")
             else:
                 enemy1 = Enemy()
 
