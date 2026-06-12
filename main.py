@@ -1,4 +1,88 @@
+import os
 import random
+import subprocess
+
+from colorama import Fore, Style, init
+
+# autoreset=True means after every print() the color resets by itself
+init(autoreset=True)
+
+
+def clear_screen():
+    # Clears the terminal so the menu always re-draws fresh
+    command = "cls" if os.name == "nt" else "clear"
+    subprocess.run(command, shell=True)
+
+
+def hp_bar(current, maximum, width=20):
+    # Builds a text bar:  [********--------] 100/200
+    ratio = current / maximum if maximum > 0 else 0
+    filled = round(ratio * width)
+    bar = "*" * filled + "-" * (width - filled)
+
+    # Change bar color based on how much HP is left
+    if ratio > 0.5:
+        color = Fore.GREEN
+    elif ratio > 0.2:
+        color = Fore.YELLOW
+    else:
+        color = Fore.RED
+
+    return f"{color}[{bar}] {current}/{maximum}"
+
+
+def print_menu(player):
+    # Redraws the main menu with the player's current stats
+    clear_screen()
+    print(Fore.CYAN + Style.BRIGHT + "==========================================")
+    print(Fore.CYAN + Style.BRIGHT + "          ⚔   WARRIOR'S PATH   ⚔        ")
+    print(Fore.CYAN + Style.BRIGHT + "==========================================")
+    print(f"  Name:    {Style.BRIGHT}{player.name}")
+    print(
+        f"  Level:   {Fore.YELLOW}{player.level}    XP: {Fore.CYAN}{player.player_xp}"
+    )
+    print(f"  HP:      {hp_bar(player.hp, player.max_hp)}")
+    print(
+        f"  ATK:     {Style.BRIGHT}{player.attack_power}    DEF: {Style.BRIGHT}{player.defense}"
+    )
+
+    # Only show the equipped line if the player has something equipped
+    if player.equipped:
+        print(Fore.GREEN + f"  Equipped: {player.equipped['name']}")
+    print(Fore.CYAN + "------------------------------------------")
+    print(Fore.YELLOW + "  [1]  Fight")
+    print(Fore.YELLOW + f"  [2]  Inventory ({len(player.inventory)} items)")
+    print(Fore.YELLOW + "  [3]  Equip Item")
+    print(Fore.YELLOW + "  [4]  Use Item")
+    print(Fore.YELLOW + "  [5]  Exit")
+    print(Fore.CYAN + "==========================================")
+    print()
+
+
+def print_inventory(inventory):
+    # Prints inventory grouped by item type for easier reading
+    print()
+    print(Fore.CYAN + Style.BRIGHT + "------------------------------------------")
+    print(Fore.CYAN + Style.BRIGHT + "               INVENTORY                  ")
+    print(Fore.CYAN + Style.BRIGHT + "------------------------------------------")
+    if not inventory:
+        print(Style.DIM + "  (empty)")
+    else:
+        # Group all items by their type key before printing
+        grouped = {}
+        for item in inventory:
+            grouped.setdefault(item["type"], []).append(item["name"])
+        for item_type, names in grouped.items():
+            print(Fore.YELLOW + Style.BRIGHT + f"  [{item_type.upper()}]")
+            for name in names:
+                print(f"    - {name}\n")
+    print(Fore.CYAN + "------------------------------------------")
+    print()
+
+
+def pause():
+    # Holds the screen so the player can read output before the menu redraws
+    input(Style.DIM + "  Press Enter to continue..." + Style.RESET_ALL)
 
 
 # Character
@@ -45,8 +129,8 @@ class Player(Character):
         self.player_xp = 0
         self.gold = 0
         self.inventory = []
-        self.rare_pity = 0
-        self.boss_pity = 0
+        self.rare_pity = 0  # counts kills toward guaranteed rare drop
+        self.boss_pity = 0  # counts fights toward guaranteed boss drop
         self.equipped = None
 
     # Dictonary list
@@ -71,17 +155,22 @@ class Player(Character):
             reward = random.choice(self.rare_items)
             self.inventory.append(reward)
             self.rare_pity = 0  # resets pity back to 0
-            print(f"Pity reward: {reward}")
+            print(Fore.MAGENTA + Style.BRIGHT + f"  ✦ Pity reward: {reward['name']} ✦")
 
     def check_boss_pity(self):
         if self.boss_pity >= 10:  # 10 boss skills required
             reward = random.choice(self.boss_items)
             self.inventory.append(reward)
             self.boss_pity = 0  # resets pity back to 0
-            print(f"Boss pity reward: {reward}")
+            print(
+                Fore.MAGENTA
+                + Style.BRIGHT
+                + f"  ✦ Boss pity reward: {reward['name']} ✦"
+            )
 
     def level_up(self, exp):
         self.player_xp += exp  # accumulate xp first
+        # Each level requires level * 250 total XP
         for cur_level in range(1, 26):  # max lvl 25
             if self.player_xp < cur_level * 250:
                 self.level = cur_level - 1
@@ -93,15 +182,16 @@ class Player(Character):
             return
 
         if item["type"] != "weapon":
-            print("Cannot equip this item.")
+            print(Fore.RED + "  Cannot equip this item.")
             return
 
         if item not in self.inventory:
-            print("Item not in inventory.")
+            print(Fore.RED + "  Item not in inventory.")
             return
 
         self.inventory.remove(item)
 
+        # Swap: send currently equipped weapon back to inventory before equipping new one
         if self.equipped is not None:
             self.inventory.append(self.equipped)
 
@@ -121,16 +211,20 @@ class Player(Character):
             # removing effect after usage
             self.inventory.remove(item)
         else:
-            print("This item cannot be used at this current time.")
+            print(Fore.RED + "  This item cannot be used at this current time.")
 
     def upgrade_stats(self):
         self.attack_power += 10
         self.defense += 5
-        print(f"Stats upgraded! Attack: {self.attack_power} | Defense: {self.defense}")
+        print(
+            Fore.CYAN
+            + f"  Stats upgraded! ATK: {self.attack_power} | DEF: {self.defense}"
+        )
 
 
 class Enemy(Character):
     def get_damage(self, target):
+        # Damage is floored at 0 so defense can never cause negative damage
         return max(0, self.attack_power - target.defense)
 
     # All enemy loots and chances
@@ -184,7 +278,7 @@ class Boss(Enemy):
         self.attack_power = 25
         self.defense = 10
         self.xp_reward = 200
-        self.enraged = False
+        self.enraged = False  # tracks whether enrage has triggered yet (one-time event)
 
     # Boss takes damage from character
     def take_damage(self, amount):
@@ -198,7 +292,11 @@ class Boss(Enemy):
         if not already_enraged and at_half_hp:
             self.enraged = True
             self.attack_power += 15
-            print(f"{self.name} is enraged! Attack surges!")
+            print(
+                Fore.RED
+                + Style.BRIGHT
+                + f"  !! {self.name} is enraged! Attack surges! !!"
+            )
 
     def get_damage(self, target):
         # calculating base damage
@@ -209,7 +307,9 @@ class Boss(Enemy):
         special_attack = self.enraged and chance < 0.3
 
         if special_attack:
-            print(f"{self.name} uses a special attack!")
+            print(
+                Fore.RED + Style.BRIGHT + f"  !! {self.name} uses a special attack! !!"
+            )
             return base_damage * 2
 
         return base_damage
@@ -255,36 +355,56 @@ class Battle:
         damage = max(0, self.player.attack_power - self.enemy.defense)
         self.enemy.take_damage(damage)
         self.player.Update_is_alive(self.player.hp)
-        print(f"You deal {damage} damage. Enemy HP: {self.enemy.hp}\n")
+        print(Fore.GREEN + f"  You deal {damage} damage.   Enemy HP: {self.enemy.hp}")
 
     def enemy_turn(self):
         damage = self.enemy.get_damage(self.player)
         self.player.take_damage(damage)
-        print(f"Enemy deals {damage} damage. Your HP: {self.player.hp}")
+        print(Fore.RED + f"  Enemy deals {damage} damage.  Your HP: {self.player.hp}")
 
     def check_Battle_end(self):
         if not self.enemy.is_alive():
             self.player.level_up(self.enemy.xp_reward)
             if not isinstance(self.enemy, Boss):  # only upgrade on normal kills
                 self.player.upgrade_stats()
-            print(f"Level: {self.player.level} | XP: {self.player.player_xp}")
+            print(
+                Fore.CYAN
+                + f"  Level: {self.player.level} | XP: {self.player.player_xp}"
+            )
 
             loot = self.enemy.drop_loots()
             if loot:
                 self.player.inventory.append(loot)
-                print(f"Dropped: {loot['name']}")
-            print(f"Victory! Survived {self.player.aliveTime} rounds.")
+                print(Fore.YELLOW + f"  Loot: {loot['name']}")
+            print(
+                Fore.GREEN
+                + Style.BRIGHT
+                + f"  *** Victory! Survived {self.player.aliveTime} rounds. ***"
+            )
             return True
 
         if not self.player.is_alive():
-            print(f"Defeated after {self.player.aliveTime} rounds.")
+            print(
+                Fore.RED
+                + Style.BRIGHT
+                + f"  *** Defeated after {self.player.aliveTime} rounds. ***"
+            )
             return True
         return False
 
     def start(self):
         self.player.aliveTime = 0
         self.player.hp = self.player.max_hp
-        print(f"\nBattle start: {self.player.name} vs {self.enemy.name}")
+        print(Fore.CYAN + Style.BRIGHT + "==========================================")
+        print(
+            Fore.CYAN
+            + Style.BRIGHT
+            + f"  Battle: {self.player.name} vs {self.enemy.name}"
+        )
+        print(Fore.CYAN + Style.BRIGHT + "==========================================")
+        print()
+
+        # Alternate player and enemy turns until one side is dead
         while True:
             self.player_turn()
             if self.check_Battle_end():
@@ -296,18 +416,10 @@ class Battle:
 
 if __name__ == "__main__":
     player1 = Player("Hero")
-    enemy1 = Enemy()
 
     while True:
-        print("\n--- MENU ---")
-        print(f"Hero | Level {player1.level} | XP: {player1.player_xp}")
-        print("1. Fight enemy (drop loot)")
-        print("2. View inventory")
-        print("3. Equip item (by name)")
-        print("4. Use item (by name)")
-        print("5. Exit")
-
-        choice = input("Choose action: ")
+        print_menu(player1)
+        choice = input("  Choose: ").strip()
 
         if choice == "1":
             player1.rare_pity += 1
@@ -316,41 +428,48 @@ if __name__ == "__main__":
             boss_roster = [WhiteTiger, ShadowDragon, AncientGolem]
 
             if player1.boss_pity >= 10:
-                index = min(player1.level // 5, len(boss_roster) - 1) # pick a boss based on level, but never go past the last boss in the list.
+                index = min(
+                    player1.level // 5, len(boss_roster) - 1
+                )  # pick a boss based on level, but never go past the last boss in the list.
                 enemy1 = boss_roster[index]()
-                print(f"A {enemy1.name} appears!")
+                print(Fore.RED + Style.BRIGHT + f"\n  *** A {enemy1.name} appears! ***")
             else:
                 enemy1 = Enemy()
 
-            battle = Battle(player1, enemy1)
-            battle.start()
+            Battle(player1, enemy1).start()
 
             player1.check_rare_pity()
             player1.check_boss_pity()
+            pause()
 
         elif choice == "2":
-            print("Inventory:", player1.inventory)
+            print_inventory(player1.inventory)
+            pause()
 
         elif choice == "3":
-            name = input("Item name to equip: ")
-            item = next(
-                (item for item in player1.inventory if item["name"] == name), None
-            )
-            if item is None:
-                print("Item not found.")
-            else:
-                player1.equip(item)
-
-        elif choice == "4":
-            name = input("Item name to use: ")
+            print_inventory(player1.inventory)
+            name = input("  Item name to equip: ").strip()
             item = next((i for i in player1.inventory if i["name"] == name), None)
             if item is None:
-                print("Item not found.")
+                print(Fore.RED + "  Item not found.")
+            else:
+                player1.equip(item)
+            pause()
+
+        elif choice == "4":
+            print_inventory(player1.inventory)
+            name = input("  Item name to use: ").strip()
+            item = next((i for i in player1.inventory if i["name"] == name), None)
+            if item is None:
+                print(Fore.RED + "  Item not found.")
             else:
                 player1.use_item(item)
+            pause()
 
         elif choice == "5":
+            print(Fore.CYAN + f"\n  Farewell, {player1.name}.\n")
             break
 
         else:
-            print("Invalid choice")
+            print(Fore.RED + "  Invalid choice.")
+            pause()
