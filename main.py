@@ -70,14 +70,14 @@ class Player(Character):
         if self.rare_pity >= 100:  # 100 kills required
             reward = random.choice(self.rare_items)
             self.inventory.append(reward)
-            self.rare_pity = 0 # resets pity back to 0
+            self.rare_pity = 0  # resets pity back to 0
             print(f"Pity reward: {reward}")
 
     def check_boss_pity(self):
         if self.boss_pity >= 10:  # 10 boss skills required
             reward = random.choice(self.boss_items)
             self.inventory.append(reward)
-            self.boss_pity = 0 # resets pity back to 0
+            self.boss_pity = 0  # resets pity back to 0
             print(f"Boss pity reward: {reward}")
 
     def level_up(self, exp):
@@ -123,8 +123,16 @@ class Player(Character):
         else:
             print("This item cannot be used at this current time.")
 
+    def upgrade_stats(self):
+        self.attack_power += 10
+        self.defense += 5
+        print(f"Stats upgraded! Attack: {self.attack_power} | Defense: {self.defense}")
+
 
 class Enemy(Character):
+    def get_damage(self, target):
+        return max(0, self.attack_power - target.defense)
+
     # All enemy loots and chances
     loot_table = [
         ("Shards", 75.0, "material"),
@@ -167,6 +175,46 @@ class Enemy(Character):
                 return {"name": name, "type": item_type}
         return None
 
+
+class Boss(Enemy):
+    def __init__(self, name="White Tiger"):
+        super().__init__(name)
+        self.hp = 300
+        self.max_hp = 300
+        self.attack_power = 25
+        self.defense = 10
+        self.xp_reward = 200
+        self.enraged = False
+
+    # Boss takes damage from character
+    def take_damage(self, amount):
+        super().take_damage(amount)
+
+        # checks if boss should enrage (only once, at half HP)
+        half_hp = self.max_hp // 2
+        already_enraged = self.enraged
+        at_half_hp = self.hp <= half_hp
+
+        if not already_enraged and at_half_hp:
+            self.enraged = True
+            self.attack_power += 15
+            print(f"{self.name} is enraged! Attack surges!")
+
+    def get_damage(self, target):
+        # calculating base damage
+        base_damage = max(0, self.attack_power - target.defense)
+
+        # 30% chance of special attack when enraged
+        chance = random.random()  # gives a number between 0.0 and 1.0
+        special_attack = self.enraged and chance < 0.3
+
+        if special_attack:
+            print(f"{self.name} uses a special attack!")
+            return base_damage * 2
+
+        return base_damage
+
+
 # Character vs Enemy
 class Battle:
     def __init__(self, player, enemy):
@@ -180,13 +228,16 @@ class Battle:
         print(f"You deal {damage} damage. Enemy HP: {self.enemy.hp}\n")
 
     def enemy_turn(self):
-        damage = max(0, self.enemy.attack_power - self.player.defense)
+        damage = self.enemy.get_damage(self.player)
         self.player.take_damage(damage)
         print(f"Enemy deals {damage} damage. Your HP: {self.player.hp}")
 
     def check_Battle_end(self):
         if not self.enemy.is_alive():
             self.player.level_up(self.enemy.xp_reward)
+            if not isinstance(self.enemy, Boss):  # only upgrade on normal kills
+                self.player.upgrade_stats()
+            print(f"Level: {self.player.level} | XP: {self.player.player_xp}")
 
             loot = self.enemy.drop_loots()
             if loot:
@@ -213,13 +264,13 @@ class Battle:
                 break
 
 
-# runs directly as a script
 if __name__ == "__main__":
     player1 = Player("Hero")
     enemy1 = Enemy()
 
     while True:
         print("\n--- MENU ---")
+        print(f"Hero | Level {player1.level} | XP: {player1.player_xp}")
         print("1. Fight enemy (drop loot)")
         print("2. View inventory")
         print("3. Equip item (by name)")
@@ -229,24 +280,29 @@ if __name__ == "__main__":
         choice = input("Choose action: ")
 
         if choice == "1":
-            enemy1 = Enemy()  # fresh enemy each fight
+            player1.rare_pity += 1
+            player1.boss_pity += 1
+
+            if player1.boss_pity >= 10:
+                enemy1 = Boss()
+                print("A boss appears!")
+            else:
+                enemy1 = Enemy()
+
             battle = Battle(player1, enemy1)
             battle.start()
 
-            # pity system
-            player1.rare_pity += 1
             player1.check_rare_pity()
+            player1.check_boss_pity()
 
         elif choice == "2":
             print("Inventory:", player1.inventory)
 
         elif choice == "3":
             name = input("Item name to equip: ")
-
             item = next(
                 (item for item in player1.inventory if item["name"] == name), None
             )
-
             if item is None:
                 print("Item not found.")
             else:
@@ -254,9 +310,7 @@ if __name__ == "__main__":
 
         elif choice == "4":
             name = input("Item name to use: ")
-
             item = next((i for i in player1.inventory if i["name"] == name), None)
-
             if item is None:
                 print("Item not found.")
             else:
