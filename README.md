@@ -1,219 +1,195 @@
-# Mini RPG Battle System (Python)
+# ⚔ Warrior’s Path
 
-A turn-based RPG combat simulator featuring leveling, loot drops, boss fights, inventory management, and a test-driven core architecture built using Python OOP principles.
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
+![Status](https://img.shields.io/badge/Status-Active%20Development-success)
+![Style](https://img.shields.io/badge/Type-CLI%20RPG-orange)
+![OOP](https://img.shields.io/badge/Architecture-OOP-purple)
+![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
----
-
-## Features
-
-- Turn-based combat system (player vs enemies and bosses)
-- XP-based leveling system (up to 25 levels)
-- Weighted loot drop system with rarity tiers
-- Boss fights with enraged phase at 50% HP
-- Inventory system (equip + consumables)
-- Pity system for rare and boss rewards
-- Object-oriented architecture with inheritance
-- Fully testable core mechanics using pytest
+A terminal-based RPG combat system built in Python featuring turn-based battles, boss scaling, weighted loot drops, inventory management, and progression systems.
 
 ---
 
-## Tech Stack
-
-- Python 3.14
-- pytest (unit testing)
-- Object-Oriented Programming (OOP)
-- CLI-based game loop
-
----
-
-## Project Structure
+## 🎮 Gameplay Preview
 
 ```
-main.py       # Core game logic (characters, combat, items, bosses)
-test_game.py  # Unit tests using pytest
+==========================================
+          ⚔   WARRIOR'S PATH   ⚔
+==========================================
+
+Name:    Hero
+Level:   3    XP: 620
+HP:      [********--------] 150/200
+ATK:     25    DEF: 10
+------------------------------------------
+[1] Fight
+[2] Inventory (6 items)
+[3] Equip Item
+[4] Use Item
+[5] Exit
+==========================================
 ```
 
 ---
 
-## How to Run
-
-Run the game:
-
-```bash
-python main.py
-```
-
-Run tests:
-
-```bash
-python -m pytest
-```
-
-Expected output:
+## ⚔ Combat Example
 
 ```
-3 passed in 0.01s
+Battle: Hero vs White Tiger
+
+You deal 14 damage. Enemy HP: 186
+Enemy deals 9 damage. Your HP: 191
+
+!! White Tiger is enraged! Attack surges! !!
+Enemy uses a special attack!
+
+Loot: Dragon Scale
+*** Victory! Survived 6 rounds. ***
 ```
 
 ---
 
-## Core Systems
+## 📌 Core Features
 
-### Combat System
+### ⚔ Combat System
 
-Turn-based combat between player and enemy.
-
+- Turn-based player vs enemy battles
 - Damage formula:
+  damage = max(0, attack_power - defense)
+- Bosses:
+  - White Tiger
+  - Shadow Dragon
+  - Ancient Golem
+- Enrage mechanic at 50% HP
+- Special attack chance (30% when enraged)
 
-  ```
-  damage = attack_power - defense
-  ```
+---
 
-- Battle ends when HP reaches 0
-- Includes boss special attack behavior when enraged
+### 📈 Progression System
 
-### Leveling System
-
-- XP is accumulated from battles
 - Max level: 25
-- Linear progression:
+- XP formula:
+  level threshold = level × 250 XP
+- Stat growth:
+  - +10 ATK
+  - +5 DEF per normal kill
 
-  ```
-  level requirement = level × 250 XP
-  ```
+---
 
-- Examples:
-  - Level 1 → 250 XP
-  - Level 2 → 500 XP
-  - Level 10 → 2500 XP
+### 🎁 Loot System (Weighted RNG)
 
-### Loot System
-
-Weighted probability-based drop system. Each item has a name, drop chance, and type:
-
-```
 ("Iron Sword", 40.0, "weapon")
 ("Dragon Scale", 1.0, "material")
-```
 
-- Lower chance = rarer item
-- System uses cumulative probability selection
+Supports:
 
-### Boss System
+- weapons
+- armor
+- consumables
+- materials
+- accessories
 
-Bosses replace normal enemies based on progression.
+---
 
-Boss types:
+### 🍀 Pity System
 
-- White Tiger
-- Shadow Dragon
-- Ancient Golem
+- Rare pity: 100 kills → guaranteed rare item
+- Boss pity: 10 boss fights → guaranteed boss reward
 
-Mechanics:
+---
 
-- Enraged state triggers at 50% HP
-- Attack power increases when enraged
-- Special attack chance during enraged state
+### 🎒 Inventory System
 
-### Inventory System
-
-Items are stored as dictionaries:
-
-```python
 {"name": "Iron Sword", "type": "weapon"}
-```
 
-Supported operations:
-
-- Add item
-- Remove item
-- Equip weapons
+- Equip weapons (1 slot)
 - Use consumables
-
-Validation rules:
-
-- Only weapons can be equipped
-- Only consumables can be used
-- Items must exist in inventory before action
-
-### Pity System
-
-Prevents bad RNG streaks.
-
-- **Rare pity:** triggers every 100 kills - rewards rare material
-- **Boss pity:** triggers every 10 boss kills - guarantees boss-tier item
+- Auto-swap equipment
 
 ---
 
-## Example Gameplay Output
+### 🧠 Boss System
 
-```
-Battle start: Hero vs White Tiger
-You deal 14 damage
-Enemy deals 9 damage
-White Tiger is enraged!
-Dropped: {"name": "Dragon Scale", "type": "material"}
-Victory! Survived 6 rounds.
-```
+- Level 0–4 → White Tiger
+- Level 5–9 → Shadow Dragon
+- Level 10+ → Ancient Golem
 
----
+Boss mechanics:
 
-## Testing
-
-All core systems are validated using automated unit tests.
-
-Coverage includes:
-
-- Player level progression
-- Damage and HP boundary conditions
-- Boss enraged state transitions
-- Loot drop correctness
-- Inventory add/remove logic
-
-Run tests:
-
-```bash
-python -m pytest
-```
-
-Expected output:
-
-```
-3 passed in 0.01s
-```
+- HP scaling
+- Enrage at 50% HP
+- XP scaling
 
 ---
 
-## Design Notes
+### 🖥️ UI System
 
-- Fully object-oriented design: `Character → Player → Enemy → Boss`
-- Clear separation of concerns:
-  - Combat system
-  - Inventory system
-  - Progression system
-- Extensible architecture for adding new bosses, items, and mechanics
-- Designed for testability and simulation correctness
-- CLI-based prototype (can be extended to GUI or web)
+- colorama-based terminal UI
+- HP bar:
+  🟢 High / 🟡 Mid / 🔴 Low
+- Menu-driven gameplay
 
 ---
 
-## Future Improvements
+## 🧱 Architecture
 
-- Save/load system (JSON persistence)
-- Skill and ability system
-- Critical hit system
-- Status effects (poison, burn, freeze)
-- Procedural dungeon generation
-- GUI version (Tkinter or web frontend)
-- Equipment stat modifiers and set bonuses
+Character → Player / Enemy → Boss
+
+Battle controller handles combat loop.
+
+Separation of:
+
+- Combat logic
+- Inventory system
+- Progression system
+- UI rendering
 
 ---
 
-## Author
+## 🛠 Tech Stack
 
-Built as a learning project focused on:
+- Python 3.10+
+- OOP
+- colorama
+- random
+- os + subprocess
 
-- Python OOP design
-- Game system architecture
-- Unit testing with pytest
-- Simulation-based gameplay logic
+---
+
+## 🚀 Run
+
+pip install colorama
+python main.py
+
+---
+
+## 🎮 Controls
+
+1 Fight
+2 Inventory
+3 Equip
+4 Use
+5 Exit
+
+---
+
+## 🔮 Future Roadmap
+
+- Save/Load system
+- Skills system
+- Crit/dodge
+- Status effects
+- Equipment modifiers
+- Procedural dungeons
+- GUI version
+
+---
+
+## 👤 Author
+
+Systems-focused Python RPG project:
+
+- OOP architecture
+- RNG systems
+- CLI UI design
+- Game loop engineering
