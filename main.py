@@ -1,6 +1,8 @@
+import json
 import os
 import random
 import subprocess
+import time
 
 from colorama import Fore, Style, init
 
@@ -55,6 +57,8 @@ def print_menu(player):
     print(Fore.YELLOW + "  [3]  Equip Item")
     print(Fore.YELLOW + "  [4]  Use Item")
     print(Fore.YELLOW + "  [5]  Exit")
+    print(Fore.YELLOW + "  [6]  Save")
+    print(Fore.YELLOW + "  [7]  Load")
     print(Fore.CYAN + "==========================================")
     print()
 
@@ -83,6 +87,42 @@ def print_inventory(inventory):
 def pause():
     # Holds the screen so the player can read output before the menu redraws
     input(Style.DIM + "  Press Enter to continue..." + Style.RESET_ALL)
+
+
+def save(player):
+    playerSave = {
+        "KeyXP": player.player_xp,
+        "KeyGold": player.gold,
+        "KeyInv": player.inventory,
+        "KeyLvl": player.level,
+        "KeyHp": player.hp,
+        "KeyMaxHp": player.max_hp,
+        "KeyAtk": player.attack_power,
+        "KeyDef": player.defense,
+        "KeyAliveTime": player.aliveTime,
+        "KeyEquipped": player.equipped,
+        "KeyRare_pity": player.rare_pity,
+        "KeyBoss_pity": player.boss_pity,
+    }
+    with open("playerSave.json", "w") as f:
+        json.dump(playerSave, f)
+
+
+def load(player):
+    with open("playerSave.json", "r") as f:
+        data = json.load(f)
+    player.player_xp = data["KeyXP"]
+    player.gold = data["KeyGold"]
+    player.inventory = data["KeyInv"]
+    player.level = data["KeyLvl"]
+    player.hp = data["KeyHp"]
+    player.max_hp = data["KeyMaxHp"]
+    player.attack_power = data["KeyAtk"]
+    player.defense = data["KeyDef"]
+    player.aliveTime = data["KeyAliveTime"]
+    player.equipped = data.get("KeyEquipped", None)
+    player.rare_pity = data.get("KeyRare_pity", 0)
+    player.boss_pity = data.get("KeyBoss_pity", 0)
 
 
 # Character
@@ -469,6 +509,32 @@ if __name__ == "__main__":
         elif choice == "5":
             print(Fore.CYAN + f"\n  Farewell, {player1.name}.\n")
             break
+
+        elif choice == "6":
+            try:
+                print("Saving Players data...", flush=True)
+                time.sleep(1)
+
+                print("Writing File...")
+                time.sleep(1)
+
+                print("Player data saved sucessfully.", flush=True)
+                pause()
+                save(player1)
+
+            except Exception as e:
+                print(f"Error saving players data: {e}", flush=True)
+                pause()
+
+        elif choice == "7":
+            try:
+                print("Loading Players data...", flush=True)
+                time.sleep(3)
+                print("Player data loaded successfully.", flush=True)
+                pause()
+                load(player1)
+            except FileNotFoundError:
+                print("No save file found.", flush=True)
 
         else:
             print(Fore.RED + "  Invalid choice.")
