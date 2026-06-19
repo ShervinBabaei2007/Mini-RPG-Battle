@@ -177,7 +177,7 @@ python main.py
 
 ## 🔮 Future Roadmap
 
-- Save/Load system
+- Save/Load system ✅
 - Skills system
 - Crit/dodge
 - Status effects
